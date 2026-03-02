@@ -7,7 +7,7 @@ df = pd.read_csv(sys.argv[1])
 seeds = df[df['eligible_for_submission'] == True]['identifier']
 
 # Clean and Save
-with open('whitelist_roots.txt', 'w') as f:
+with open('whitelisted_roots.txt', 'w') as f:
     for item in seeds.unique():
         # Strip *. and https:// to get the base root
         clean = item.replace('*.', '').replace('https://', '').split('/')[0]
