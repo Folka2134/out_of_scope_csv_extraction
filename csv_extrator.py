@@ -14,40 +14,45 @@ def clean_identifier(text):
     return text.strip()
 
 def main():
-    # Check if the user provided the filename
-    if len(sys.argv) < 2:
-        print("Usage: python extract_scope.py <path_to_csv>")
+    if len(sys.argv) < 3:
+        print("Usage:")
+        print("  python3 extract_scope.py -roots <csv_file>  # Creates in_scope_roots.txt")
+        print("  python3 extract_scope.py -subs  <csv_file>  # Creates out_of_scope.txt")
         sys.exit(1)
 
-    csv_file = sys.argv[1]
+    flag = sys.argv[1]
+    csv_file = sys.argv[2]
 
     try:
         df = pd.read_csv(csv_file)
-
-        # Filter for rows where submission is NOT allowed
-        # Handles both boolean False and the string "false"
-        oos_mask = (df['eligible_for_submission'] == False) | \
-                   (df['eligible_for_submission'].astype(str).str.lower() == 'false')
         
-        oos_raw = df[oos_mask]['identifier']
+        if flag == "-roots":
+            # Logic: Submission is Allowed (True)
+            mask = (df['eligible_for_submission'] == True) | (df['eligible_for_submission'].astype(str).str.lower() == 'true')
+            output_file = 'in_scope_roots.txt'
+            msg = "In-Scope Roots (Seeds)"
+        elif flag == "-subs":
+            # Logic: Submission is Forbidden (False)
+            mask = (df['eligible_for_submission'] == False) | (df['eligible_for_submission'].astype(str).str.lower() == 'false')
+            output_file = 'out_of_scope.txt'
+            msg = "Out-of-Scope (Blacklist)"
+        else:
+            print(f"Error: Invalid flag '{flag}'. Use -roots or -subs.")
+            sys.exit(1)
 
-        # Apply cleaning, remove duplicates, and remove empty strings
-        blacklist = sorted(list(set(oos_raw.apply(clean_identifier))))
-        blacklist = [d for d in blacklist if d]
+        raw_list = df[mask]['identifier']
+        # Clean domains and filter out things that aren't actually domains (like "WGP Slot Games")
+        cleaned_list = sorted(list(set(raw_list.apply(clean_identifier))))
+        final_list = [d for d in cleaned_list if d and "." in d] 
 
-        # Save to out_of_scope.txt
-        output_file = 'out_of_scope.txt'
         with open(output_file, 'w') as f:
-            for domain in blacklist:
+            for domain in final_list:
                 f.write(f"{domain}\n")
 
-        print(f"[*] Successfully processed: {csv_file}")
-        print(f"[*] Extracted {len(blacklist)} unique base domains to {output_file}")
-        
-    except FileNotFoundError:
-        print(f"[!] Error: The file '{csv_file}' was not found.")
+        print(f"[*] Successfully generated {output_file} ({len(final_list)} {msg})")
+
     except Exception as e:
-        print(f"[!] An unexpected error occurred: {e}")
+        print(f"[!] Error: {e}")
 
 if __name__ == "__main__":
     main()
