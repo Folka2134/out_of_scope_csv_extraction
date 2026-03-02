@@ -1,7 +1,7 @@
 import pandas as pd
 import sys
 
-# Usage: python3 roots_whitelist.py program.csv
+# Usage: python3 whitelisted_roots.py program.csv
 df = pd.read_csv(sys.argv[1])
 # Extract only where submission is True
 seeds = df[df['eligible_for_submission'] == True]['identifier']
